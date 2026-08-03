@@ -12,11 +12,12 @@
 .mode-sidebar-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  font-weight: 700;
-  font-size: 1.05rem;
-  padding: 4px 6px 16px;
+  padding: 4px 6px 18px;
+}
+
+.mode-sidebar-logo {
+  width: 100%;
+  height: auto;
 }
 
 .mode-tabs {

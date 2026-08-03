@@ -1,5 +1,6 @@
 import React from 'react';
-import { ChatCircleText, Flask, ShieldCheckered, Plus, Trash, SignOut, Robot } from '@phosphor-icons/react';
+import { ChatCircleText, Flask, ShieldCheckered, Plus, Trash, SignOut } from '@phosphor-icons/react';
+import logo from '../assets/lockia-logo.png';
 import './ModeSidebar.css';
 
 export type LockiaMode = 'chat' | 'challenge' | 'cowork';
@@ -41,8 +42,7 @@ const ModeSidebar: React.FC<ModeSidebarProps> = ({
   return (
     <aside className="mode-sidebar">
       <div className="mode-sidebar-brand">
-        <Robot size={22} weight="duotone" />
-        LOCKIA
+        <img src={logo} alt="LOCKIA" className="mode-sidebar-logo" />
       </div>
 
       <div className="mode-tabs">
