@@ -1,0 +1,122 @@
+.challenge-view {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  grid-template-rows: 1fr auto;
+  height: 100vh;
+  background: var(--bg-app);
+}
+
+.challenge-history {
+  grid-row: 1 / 3;
+  border-right: 1px solid var(--border-color);
+  padding: 16px 10px;
+  overflow-y: auto;
+}
+
+.challenge-history-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 10px;
+  padding: 0 6px;
+}
+
+.challenge-history-empty {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+  padding: 6px;
+}
+
+.challenge-history-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  margin-bottom: 2px;
+}
+
+.challenge-history-item:hover, .challenge-history-item.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.challenge-canvas {
+  padding: 20px;
+  overflow: auto;
+}
+
+.challenge-canvas-empty, .challenge-canvas-loading {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-secondary);
+  text-align: center;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.challenge-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 60vh;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.challenge-composer {
+  grid-column: 2;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 12px 20px 20px;
+}
+
+.challenge-composer textarea {
+  flex: 1;
+  resize: none;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.challenge-composer textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.challenge-composer button {
+  background: var(--accent);
+  border: none;
+  color: #04222a;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.challenge-composer button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

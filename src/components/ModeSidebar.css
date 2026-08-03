@@ -1,0 +1,143 @@
+.mode-sidebar {
+  width: 260px;
+  min-width: 260px;
+  height: 100vh;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+}
+
+.mode-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 4px 6px 16px;
+}
+
+.mode-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.mode-tab {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.mode-tab:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.mode-tab.active {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.mode-new-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  padding: 9px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.mode-new-btn:hover {
+  border-color: var(--accent);
+}
+
+.mode-history {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-history-empty {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  padding: 8px;
+}
+
+.mode-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.mode-history-item:hover, .mode-history-item.active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.mode-history-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.mode-history-delete {
+  opacity: 0;
+  display: flex;
+}
+
+.mode-history-item:hover .mode-history-delete {
+  opacity: 1;
+}
+
+.mode-history-delete:hover {
+  color: var(--danger);
+}
+
+.mode-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.82rem;
+  margin-top: 10px;
+}
+
+.mode-logout-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
