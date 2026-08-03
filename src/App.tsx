@@ -1,8 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/authContext';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import Home from './pages/Home';
 import ChatPage from './pages/ChatPage';
 
 const PrivateRoute: React.FC<{ children: React.ReactElement }> = ({ children }) => {
@@ -17,10 +16,12 @@ const PublicOnlyRoute: React.FC<{ children: React.ReactElement }> = ({ children 
 
 const AppRoutes: React.FC = () => (
   <Routes>
-    <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-    <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+    <Route path="/" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+    <Route path="/login" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+    <Route path="/register" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+    <Route path="/forgot-password" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
     <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
-    <Route path="*" element={<Navigate to="/chat" replace />} />
+    <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
 );
 

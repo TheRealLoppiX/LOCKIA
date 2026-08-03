@@ -1,0 +1,147 @@
+@keyframes lockia-pulse-glow {
+  from { filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.35)); }
+  to { filter: drop-shadow(0 0 22px rgba(0, 229, 255, 0.7)); }
+}
+
+/* ========================================
+ * ESTRUTURA — logo à esquerda, formulário à direita
+ * ======================================== */
+.home-shell {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+.home-visual {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 20px;
+}
+
+.home-logo {
+  width: 320px;
+  max-width: 80%;
+  height: auto;
+  margin-bottom: 18px;
+  animation: lockia-pulse-glow 3s infinite alternate;
+}
+
+.home-visual p {
+  color: var(--text-secondary);
+  font-size: 1rem;
+  max-width: 360px;
+  margin: 0;
+}
+
+.home-panel {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.home-panel-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 32px;
+}
+
+/* ========================================
+ * PAINEL DE BOAS-VINDAS (modo landing)
+ * ======================================== */
+.landing-form {
+  text-align: center;
+}
+
+.landing-form h2 {
+  font-size: 1.5rem;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.home-button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.home-button-row .auth-submit {
+  margin-top: 0;
+}
+
+.auth-submit.secondary {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+/* ========================================
+ * ELEMENTOS auxiliares
+ * ======================================== */
+.home-forgot-link {
+  text-align: right;
+  margin: -6px 0 12px;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.home-forgot-link .link-btn {
+  font-size: 0.82rem;
+}
+
+.home-back-btn {
+  display: block;
+  margin: 18px auto 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.home-back-btn:hover {
+  color: var(--accent);
+}
+
+/* ========================================
+ * RESPONSIVO
+ * ======================================== */
+@media (max-width: 900px) {
+  .home-shell {
+    flex-direction: column;
+  }
+
+  .home-visual {
+    padding-top: 48px;
+    padding-bottom: 24px;
+  }
+
+  .home-logo {
+    width: 220px;
+  }
+}

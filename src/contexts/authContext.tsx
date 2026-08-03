@@ -22,6 +22,7 @@ interface AuthContextType {
   loading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -108,6 +109,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     applySession(data.token);
   };
 
+  // O e-mail de redefinição sempre aponta pro LOCK-FRONT (é lá que existe a
+  // tela de "crie uma nova senha" com o token) — mesmo pedido feito a partir
+  // do LOCKIA, já que é a mesma conta/backend.
+  const forgotPassword = async (email: string) => {
+    const response = await fetch(`${LOCK_API_URL}/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Não foi possível enviar o link.');
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('lockia-user');
     localStorage.removeItem('lockia-token');
@@ -117,7 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, loading, login, register, forgotPassword, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
