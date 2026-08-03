@@ -32,11 +32,21 @@ interface DecodedToken {
   name: string;
   email: string;
   avatar_url?: string;
+  exp: number;
 }
 
 function userFromToken(token: string): User {
   const decoded: DecodedToken = jwtDecode(token);
   return { id: decoded.sub, name: decoded.name, email: decoded.email, avatar_url: decoded.avatar_url };
+}
+
+function isTokenExpired(token: string): boolean {
+  try {
+    const decoded: DecodedToken = jwtDecode(token);
+    return !decoded.exp || decoded.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
 }
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -49,8 +59,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedUser = localStorage.getItem('lockia-user');
     const storedToken = localStorage.getItem('lockia-token');
     if (storedUser && storedToken) {
-      setUser(JSON.parse(storedUser));
-      setToken(storedToken);
+      try {
+        if (isTokenExpired(storedToken)) {
+          throw new Error('token expirado');
+        }
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+      } catch {
+        localStorage.removeItem('lockia-user');
+        localStorage.removeItem('lockia-token');
+      }
     }
     setLoading(false);
   }, []);

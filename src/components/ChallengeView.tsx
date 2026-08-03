@@ -14,6 +14,7 @@ interface ChallengeViewProps {
   input: string;
   onInputChange: (value: string) => void;
   onGenerate: () => void;
+  conversationId: string | null;
 }
 
 // O HTML gerado pela IA é propositalmente vulnerável (é o próprio objetivo
@@ -21,7 +22,7 @@ interface ChallengeViewProps {
 // o documento fica numa origem opaca isolada, incapaz de ler cookies,
 // localStorage ou o DOM do LOCKIA, mesmo que o próprio desafio contenha um
 // script malicioso de propósito.
-const ChallengeView: React.FC<ChallengeViewProps> = ({ entries, isLoading, input, onInputChange, onGenerate }) => {
+const ChallengeView: React.FC<ChallengeViewProps> = ({ entries, isLoading, input, onInputChange, onGenerate, conversationId }) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(entries.length > 0 ? entries.length - 1 : null);
 
   const selected = selectedIndex !== null ? entries[selectedIndex] : null;
@@ -30,9 +31,13 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({ entries, isLoading, input
     onGenerate();
   };
 
+  // Reseleciona o desafio mais recente sempre que a conversa ativa muda (não só
+  // quando o número de entradas muda) — evita mostrar o desafio de outra conversa
+  // ao trocar para uma que tenha o mesmo número de desafios já gerados.
   React.useEffect(() => {
-    if (entries.length > 0) setSelectedIndex(entries.length - 1);
-  }, [entries.length]);
+    setSelectedIndex(entries.length > 0 ? entries.length - 1 : null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId, entries.length]);
 
   return (
     <div className="challenge-view">
@@ -43,7 +48,7 @@ const ChallengeView: React.FC<ChallengeViewProps> = ({ entries, isLoading, input
         {entries.length === 0 && <p className="challenge-history-empty">Descreva o desafio que você quer praticar.</p>}
         {entries.map((entry, i) => (
           <button
-            key={entry.timestamp}
+            key={`${entry.timestamp}-${i}`}
             className={`challenge-history-item ${i === selectedIndex ? 'active' : ''}`}
             onClick={() => setSelectedIndex(i)}
           >

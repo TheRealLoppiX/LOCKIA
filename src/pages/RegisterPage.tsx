@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Robot } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/authContext';
+import logo from '../assets/lockia-logo.png';
 import './auth.css';
 
 const RegisterPage: React.FC = () => {
@@ -29,8 +29,7 @@ const RegisterPage: React.FC = () => {
     <div className="auth-page">
       <div className="auth-card">
         <div className="auth-brand">
-          <Robot size={26} weight="duotone" />
-          LOCKIA
+          <img src={logo} alt="LOCKIA" />
         </div>
         <h1>Criar conta</h1>
         <p className="auth-subtitle">A mesma conta funciona no LOCK e no LOCKIA.</p>

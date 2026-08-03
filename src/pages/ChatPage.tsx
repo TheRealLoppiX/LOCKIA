@@ -1,11 +1,27 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../contexts/authContext';
-import { lockiaApi } from '../api';
+import { lockiaApi, ChatAttachment } from '../api';
 import ModeSidebar, { LockiaMode } from '../components/ModeSidebar';
-import ChatPanel, { ChatMessage } from '../components/ChatPanel';
+import ChatPanel, { ChatMessage, PendingAttachment } from '../components/ChatPanel';
 import ChallengeView, { ChallengeEntry } from '../components/ChallengeView';
 import CoworkConsent from '../components/CoworkConsent';
 import './ChatPage.css';
+
+const MAX_ATTACHMENTS = 3;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const ACCEPTED_ATTACHMENT_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'application/pdf', 'text/plain'];
+
+function readFileAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.slice(result.indexOf(',') + 1)); // remove o prefixo "data:mime;base64,"
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 interface ChatConversation {
   id: string;
@@ -61,6 +77,9 @@ const ChatPage: React.FC = () => {
   const [chatActiveId, setChatActiveId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
+  const [chatAttachments, setChatAttachments] = useState<PendingAttachment[]>([]);
+  const [chatAttachmentError, setChatAttachmentError] = useState<string | null>(null);
+  const [chatPendingLinks, setChatPendingLinks] = useState<string[]>([]);
 
   // --- Modo Cowork ---
   const [coworkConvos, setCoworkConvos] = useState<ChatConversation[]>(() => loadChat('lockia-cowork'));
@@ -84,6 +103,78 @@ const ChatPage: React.FC = () => {
     localStorage.setItem('lockia-challenge', JSON.stringify(next));
   }, []);
 
+  // Sincroniza entre abas: se outra aba salvar uma dessas chaves (nova
+  // mensagem, conversa apagada etc.), recarrega o estado em vez de deixar a
+  // cópia em memória desta aba sobrescrever o que a outra aba salvou.
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'lockia-chat') setChatConvos(loadChat('lockia-chat'));
+      else if (e.key === 'lockia-cowork') setCoworkConvos(loadChat('lockia-cowork'));
+      else if (e.key === 'lockia-challenge') setChallengeConvos(loadChallenge('lockia-challenge'));
+    };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
+  // ---------------- Anexos do modo Chat (imagem/documento/link) ----------------
+  const handleAddChatAttachments = async (files: FileList) => {
+    setChatAttachmentError(null);
+    const incoming = Array.from(files);
+    if (chatAttachments.length + incoming.length > MAX_ATTACHMENTS) {
+      setChatAttachmentError(`Você pode anexar no máximo ${MAX_ATTACHMENTS} arquivos por mensagem.`);
+      return;
+    }
+    const next: PendingAttachment[] = [...chatAttachments];
+    for (const file of incoming) {
+      if (!ACCEPTED_ATTACHMENT_MIME_TYPES.includes(file.type)) {
+        setChatAttachmentError(`Tipo de arquivo não suportado: ${file.name}. Use PNG, JPEG, WEBP, PDF ou TXT.`);
+        continue;
+      }
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        setChatAttachmentError(`"${file.name}" passa do limite de 5MB.`);
+        continue;
+      }
+      try {
+        const data = await readFileAsBase64(file);
+        next.push({
+          name: file.name,
+          mimeType: file.type,
+          data,
+          previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        });
+      } catch {
+        setChatAttachmentError(`Não foi possível ler o arquivo "${file.name}".`);
+      }
+    }
+    setChatAttachments(next);
+  };
+
+  const handleRemoveChatAttachment = (index: number) => {
+    setChatAttachments((prev) => {
+      const removed = prev[index];
+      if (removed?.previewUrl) URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  };
+
+  const handleAddChatLink = (url: string) => {
+    setChatPendingLinks((prev) => [...prev, url]);
+  };
+
+  const handleRemoveChatLink = (index: number) => {
+    setChatPendingLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const clearChatPending = useCallback(() => {
+    chatAttachments.forEach((a) => {
+      if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+    });
+    setChatAttachments([]);
+    setChatPendingLinks([]);
+    setChatAttachmentError(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatAttachments]);
+
   // ---------------- Chat / Cowork (mesma lógica, endpoint diferente) ----------------
   const runChatLikeSend = async (
     kind: 'chat' | 'cowork',
@@ -94,10 +185,14 @@ const ChatPage: React.FC = () => {
     setInput: (v: string) => void,
     setLoading: (v: boolean) => void,
     storageKey: string,
-    setConvos: (v: ChatConversation[]) => void
+    setConvos: (v: ChatConversation[]) => void,
+    pendingAttachments: PendingAttachment[] = [],
+    pendingLinks: string[] = [],
+    clearPending?: () => void
   ) => {
-    if (!message.trim() || !token) return;
+    if ((!message.trim() && pendingAttachments.length === 0 && pendingLinks.length === 0) || !token) return;
     setInput('');
+    clearPending?.();
     setLoading(true);
 
     let workingId = activeId;
@@ -105,26 +200,43 @@ const ChatPage: React.FC = () => {
 
     if (!workingId) {
       workingId = `${Date.now()}`;
-      workingList = [{ id: workingId, title: deriveTitle(message), messages: [] }, ...convos];
+      const title = deriveTitle(message || pendingAttachments[0]?.name || pendingLinks[0] || 'Novo anexo');
+      workingList = [{ id: workingId, title, messages: [] }, ...convos];
       setActiveId(workingId);
     }
 
-    const userMsg: ChatMessage = { role: 'user', content: message, timestamp: Date.now() };
+    const userMsg: ChatMessage = {
+      role: 'user',
+      content: message,
+      timestamp: Date.now(),
+      attachments: pendingAttachments.length > 0 ? pendingAttachments.map(({ name, mimeType }) => ({ name, mimeType })) : undefined,
+      links: pendingLinks.length > 0 ? pendingLinks : undefined,
+    };
     const history = (workingList.find((c) => c.id === workingId)?.messages || []).map((m) => ({ role: m.role, content: m.content }));
     const withUser = workingList.map((c) => (c.id === workingId ? { ...c, messages: [...c.messages, userMsg] } : c));
     persistChat(storageKey, withUser, setConvos);
 
+    // O LOCKIA-API não busca conteúdo de URL nenhuma (sem risco de SSRF) — um
+    // link anexado só é repassado como texto pra IA comentar a partir do que
+    // já sabe, igual citar um link numa conversa normal.
+    const messageForApi = pendingLinks.length > 0
+      ? `${message}${message ? '\n\n' : ''}Link(s) compartilhado(s) pelo usuário:\n${pendingLinks.map((l) => `- ${l}`).join('\n')}`
+      : message;
+
     try {
       const activeConvo = withUser.find((c) => c.id === workingId);
       const authorizationConfirmed = !!activeConvo?.authorizationConfirmed;
+      const apiAttachments: ChatAttachment[] | undefined = pendingAttachments.length > 0
+        ? pendingAttachments.map(({ name, mimeType, data }) => ({ name, mimeType, data }))
+        : undefined;
       const { response } =
         kind === 'chat'
-          ? await lockiaApi.chat(token, message, history)
-          : await lockiaApi.cowork(token, message, history, authorizationConfirmed);
+          ? await lockiaApi.chat(token, messageForApi, history, apiAttachments)
+          : await lockiaApi.cowork(token, messageForApi, history, authorizationConfirmed);
       const reply: ChatMessage = { role: 'aegis', content: response, timestamp: Date.now() };
       persistChat(storageKey, withUser.map((c) => (c.id === workingId ? { ...c, messages: [...c.messages, reply] } : c)), setConvos);
     } catch (err: any) {
-      const reply: ChatMessage = { role: 'aegis', content: err.message || 'Erro de conexão com o LOCKIA-API.', timestamp: Date.now() };
+      const reply: ChatMessage = { role: 'aegis', content: err.message || 'Erro de conexão com o LOCKIA-API.', timestamp: Date.now(), isError: true };
       persistChat(storageKey, withUser.map((c) => (c.id === workingId ? { ...c, messages: [...c.messages, reply] } : c)), setConvos);
     } finally {
       setLoading(false);
@@ -133,7 +245,10 @@ const ChatPage: React.FC = () => {
 
   const handleChatSend = (override?: string) => {
     const message = (override ?? chatInput).trim();
-    runChatLikeSend('chat', message, chatConvos, chatActiveId, setChatActiveId, setChatInput, setChatLoading, 'lockia-chat', setChatConvos);
+    runChatLikeSend(
+      'chat', message, chatConvos, chatActiveId, setChatActiveId, setChatInput, setChatLoading, 'lockia-chat', setChatConvos,
+      chatAttachments, chatPendingLinks, clearChatPending
+    );
   };
 
   const handleCoworkSend = (override?: string) => {
@@ -191,8 +306,16 @@ const ChatPage: React.FC = () => {
       return {
         conversations: chatConvos.map(({ id, title }) => ({ id, title })),
         activeId: chatActiveId,
-        onSelect: setChatActiveId,
-        onNewChat: () => setChatActiveId(null),
+        onSelect: (id: string) => {
+          setChatActiveId(id);
+          setChatInput('');
+          clearChatPending();
+        },
+        onNewChat: () => {
+          setChatActiveId(null);
+          setChatInput('');
+          clearChatPending();
+        },
         onDelete: (id: string) => {
           const next = chatConvos.filter((c) => c.id !== id);
           persistChat('lockia-chat', next, setChatConvos);
@@ -204,8 +327,14 @@ const ChatPage: React.FC = () => {
       return {
         conversations: coworkConvos.map(({ id, title }) => ({ id, title })),
         activeId: coworkActiveId,
-        onSelect: setCoworkActiveId,
-        onNewChat: () => setCoworkActiveId(null),
+        onSelect: (id: string) => {
+          setCoworkActiveId(id);
+          setCoworkInput('');
+        },
+        onNewChat: () => {
+          setCoworkActiveId(null);
+          setCoworkInput('');
+        },
         onDelete: (id: string) => {
           const next = coworkConvos.filter((c) => c.id !== id);
           persistChat('lockia-cowork', next, setCoworkConvos);
@@ -216,15 +345,21 @@ const ChatPage: React.FC = () => {
     return {
       conversations: challengeConvos.map(({ id, title }) => ({ id, title })),
       activeId: challengeActiveId,
-      onSelect: setChallengeActiveId,
-      onNewChat: () => setChallengeActiveId(null),
+      onSelect: (id: string) => {
+        setChallengeActiveId(id);
+        setChallengeInput('');
+      },
+      onNewChat: () => {
+        setChallengeActiveId(null);
+        setChallengeInput('');
+      },
       onDelete: (id: string) => {
         const next = challengeConvos.filter((c) => c.id !== id);
         persistChallenge(next);
         if (challengeActiveId === id) setChallengeActiveId(null);
       },
     };
-  }, [mode, chatConvos, chatActiveId, coworkConvos, coworkActiveId, challengeConvos, challengeActiveId, persistChat, persistChallenge]);
+  }, [mode, chatConvos, chatActiveId, coworkConvos, coworkActiveId, challengeConvos, challengeActiveId, persistChat, persistChallenge, clearChatPending]);
 
   const activeChatMessages = chatConvos.find((c) => c.id === chatActiveId)?.messages || [];
   const activeCoworkConvo = coworkConvos.find((c) => c.id === coworkActiveId);
@@ -252,6 +387,13 @@ const ChatPage: React.FC = () => {
           emptyTitle="LOCKIA"
           emptySubtitle="Assistente de IA especializado em cibersegurança."
           suggestions={CHAT_SUGGESTIONS}
+          attachments={chatAttachments}
+          onAddAttachments={handleAddChatAttachments}
+          onRemoveAttachment={handleRemoveChatAttachment}
+          attachmentError={chatAttachmentError}
+          pendingLinks={chatPendingLinks}
+          onAddLink={handleAddChatLink}
+          onRemoveLink={handleRemoveChatLink}
         />
       )}
 
@@ -262,6 +404,7 @@ const ChatPage: React.FC = () => {
           input={challengeInput}
           onInputChange={setChallengeInput}
           onGenerate={handleChallengeGenerate}
+          conversationId={challengeActiveId}
         />
       )}
 

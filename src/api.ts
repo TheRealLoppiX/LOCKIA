@@ -7,6 +7,12 @@ export interface ChatHistoryEntry {
   content: string;
 }
 
+export interface ChatAttachment {
+  name: string;
+  mimeType: string;
+  data: string; // base64, sem o prefixo data:...;base64,
+}
+
 async function post<T>(path: string, token: string, body: unknown): Promise<T> {
   const response = await fetch(`${LOCKIA_API_URL}${path}`, {
     method: 'POST',
@@ -24,8 +30,8 @@ async function post<T>(path: string, token: string, body: unknown): Promise<T> {
 }
 
 export const lockiaApi = {
-  chat: (token: string, message: string, history: ChatHistoryEntry[]) =>
-    post<{ response: string }>('/chat', token, { message, history }),
+  chat: (token: string, message: string, history: ChatHistoryEntry[], attachments?: ChatAttachment[]) =>
+    post<{ response: string }>('/chat', token, { message, history, attachments }),
 
   challenge: (token: string, message: string, history: ChatHistoryEntry[]) =>
     post<{ html: string }>('/challenge', token, { message, history }),
