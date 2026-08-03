@@ -57,6 +57,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Handoff de sessão vindo do LOCK (card "LOCKIA" no dashboard) — o token
+    // chega no fragmento da URL (ex: #token=eyJ...), nunca numa query string,
+    // porque fragmentos não são enviados ao servidor nem aparecem em logs/
+    // Referer. Some da barra de endereço assim que aplicado.
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const handoffToken = hashParams.get('token');
+    if (handoffToken && !isTokenExpired(handoffToken)) {
+      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      applySession(handoffToken);
+      setLoading(false);
+      return;
+    }
+
     const storedUser = localStorage.getItem('lockia-user');
     const storedToken = localStorage.getItem('lockia-token');
     if (storedUser && storedToken) {
@@ -72,6 +85,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     }
     setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const applySession = (receivedToken: string) => {
