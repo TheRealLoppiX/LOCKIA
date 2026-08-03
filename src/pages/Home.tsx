@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useParams, useNavigate, Navigate } from 'react-router-dom';
+import { EnvelopeSimple, LockSimple, User, Eye, EyeSlash } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/authContext';
 import HexagonBackground from '../components/HexagonBackground';
 import logo from '../assets/lockia-logo.png';
@@ -8,18 +9,17 @@ import './Home.css';
 
 type Mode = 'landing' | 'login' | 'register' | 'forgot';
 
-const PATH_TO_MODE: Record<string, Mode> = {
-  '/': 'landing',
-  '/login': 'login',
-  '/register': 'register',
-  '/forgot-password': 'forgot',
+const AUTH_MODE_TO_MODE: Record<string, Mode> = {
+  login: 'login',
+  register: 'register',
+  'forgot-password': 'forgot',
 };
 
-const MODE_TO_PATH: Record<Mode, string> = {
-  landing: '/',
-  login: '/login',
-  register: '/register',
-  forgot: '/forgot-password',
+const MODE_TO_AUTH_MODE: Record<Mode, string | undefined> = {
+  landing: undefined,
+  login: 'login',
+  register: 'register',
+  forgot: 'forgot-password',
 };
 
 // Painel visual (logo + fundo animado) — sempre visível à esquerda; só o
@@ -46,6 +46,7 @@ const LoginPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch }) 
   const { login } = useAuth();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -68,10 +69,15 @@ const LoginPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch }) 
       <p className="auth-subtitle">Use a mesma conta do LOCK para acessar o LOCKIA.</p>
       {error && <div className="auth-error">{error}</div>}
       <div className="auth-field">
+        <EnvelopeSimple size={18} className="auth-field-icon" />
         <input type="text" placeholder="E-mail" value={identifier} onChange={(e) => setIdentifier(e.target.value)} required />
       </div>
-      <div className="auth-field">
-        <input type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
+      <div className="auth-field auth-field-password">
+        <LockSimple size={18} className="auth-field-icon" />
+        <input type={showPassword ? 'text' : 'password'} placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <span className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+        </span>
       </div>
       <div className="home-forgot-link">
         <button type="button" className="link-btn" onClick={() => onSwitch('forgot')}>Esqueceu a senha?</button>
@@ -89,6 +95,7 @@ const RegisterPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -111,13 +118,19 @@ const RegisterPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch 
       <p className="auth-subtitle">A mesma conta funciona no LOCK e no LOCKIA.</p>
       {error && <div className="auth-error">{error}</div>}
       <div className="auth-field">
+        <User size={18} className="auth-field-icon" />
         <input type="text" placeholder="Nome completo" value={name} onChange={(e) => setName(e.target.value)} required />
       </div>
       <div className="auth-field">
+        <EnvelopeSimple size={18} className="auth-field-icon" />
         <input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
-      <div className="auth-field">
-        <input type="password" placeholder="Senha (mín. 8 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+      <div className="auth-field auth-field-password">
+        <LockSimple size={18} className="auth-field-icon" />
+        <input type={showPassword ? 'text' : 'password'} placeholder="Senha (mín. 8 caracteres)" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
+        <span className="auth-password-toggle" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+        </span>
       </div>
       <button type="submit" className="auth-submit" disabled={loading}>{loading ? 'Criando...' : 'Criar conta'}</button>
       <div className="auth-switch">
@@ -168,6 +181,7 @@ const ForgotPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch })
       <p className="auth-subtitle">Digite seu e-mail para receber o link de redefinição.</p>
       {error && <div className="auth-error">{error}</div>}
       <div className="auth-field">
+        <EnvelopeSimple size={18} className="auth-field-icon" />
         <input type="email" placeholder="Seu e-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
       </div>
       <button type="submit" className="auth-submit" disabled={loading}>{loading ? 'Enviando...' : 'Enviar link'}</button>
@@ -179,24 +193,22 @@ const ForgotPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch })
 };
 
 const Home: React.FC = () => {
-  const location = useLocation();
+  const { authMode } = useParams<{ authMode?: string }>();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<Mode>(PATH_TO_MODE[location.pathname] ?? 'landing');
-  const skipNextSync = useRef(false);
 
-  useEffect(() => {
-    if (skipNextSync.current) {
-      skipNextSync.current = false;
-      return;
-    }
-    setMode(PATH_TO_MODE[location.pathname] ?? 'landing');
-  }, [location.pathname]);
+  // "/", "/login", "/register" e "/forgot-password" são todos a MESMA rota
+  // (path="/:authMode?") — só o parâmetro muda, então trocar de modo não
+  // remonta o componente (mesmo caso clássico de "/users/1" -> "/users/2").
+  const mode: Mode | null = authMode === undefined ? 'landing' : AUTH_MODE_TO_MODE[authMode] ?? null;
 
   const switchMode = (next: Mode) => {
-    skipNextSync.current = true;
-    setMode(next);
-    navigate(MODE_TO_PATH[next]);
+    const path = MODE_TO_AUTH_MODE[next];
+    navigate(path ? `/${path}` : '/');
   };
+
+  if (mode === null) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="home-shell">
@@ -204,13 +216,15 @@ const Home: React.FC = () => {
       <BrandPanel />
       <div className="home-panel">
         <div className="home-panel-card">
-          {mode === 'landing' && <LandingPanel onSwitch={switchMode} />}
-          {mode === 'login' && <LoginPanel onSwitch={switchMode} />}
-          {mode === 'register' && <RegisterPanel onSwitch={switchMode} />}
-          {mode === 'forgot' && <ForgotPanel onSwitch={switchMode} />}
-          {mode !== 'landing' && (
-            <button type="button" className="home-back-btn" onClick={() => switchMode('landing')}>← Voltar</button>
-          )}
+          <div key={mode} className="home-mode-transition">
+            {mode === 'landing' && <LandingPanel onSwitch={switchMode} />}
+            {mode === 'login' && <LoginPanel onSwitch={switchMode} />}
+            {mode === 'register' && <RegisterPanel onSwitch={switchMode} />}
+            {mode === 'forgot' && <ForgotPanel onSwitch={switchMode} />}
+            {mode !== 'landing' && (
+              <button type="button" className="home-back-btn" onClick={() => switchMode('landing')}>← Voltar</button>
+            )}
+          </div>
         </div>
       </div>
     </div>

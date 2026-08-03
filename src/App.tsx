@@ -16,10 +16,10 @@ const PublicOnlyRoute: React.FC<{ children: React.ReactElement }> = ({ children 
 
 const AppRoutes: React.FC = () => (
   <Routes>
-    <Route path="/" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
-    <Route path="/login" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
-    <Route path="/register" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
-    <Route path="/forgot-password" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
+    {/* Uma rota só pras 4 variantes da home — são a MESMA instância de
+        componente por baixo (só o parâmetro muda), então trocar de modo
+        não remonta a página. Ver Home.tsx. */}
+    <Route path="/:authMode?" element={<PublicOnlyRoute><Home /></PublicOnlyRoute>} />
     <Route path="/chat" element={<PrivateRoute><ChatPage /></PrivateRoute>} />
     <Route path="*" element={<Navigate to="/" replace />} />
   </Routes>
