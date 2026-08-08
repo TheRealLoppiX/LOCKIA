@@ -63,11 +63,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Referer. Some da barra de endereço assim que aplicado.
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const handoffToken = hashParams.get('token');
-    if (handoffToken && !isTokenExpired(handoffToken)) {
+    if (handoffToken) {
+      // Limpa a URL sempre que houver um token no fragmento, mesmo se ele já
+      // estiver expirado — senão o JWT (com nome/e-mail decodificáveis) fica
+      // exposto na barra de endereço/histórico do navegador indefinidamente.
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      applySession(handoffToken);
-      setLoading(false);
-      return;
+      if (!isTokenExpired(handoffToken)) {
+        applySession(handoffToken);
+        setLoading(false);
+        return;
+      }
     }
 
     const storedUser = localStorage.getItem('lockia-user');
