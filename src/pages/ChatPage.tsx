@@ -103,6 +103,37 @@ const ChatPage: React.FC = () => {
     localStorage.setItem('lockia-challenge', JSON.stringify(next));
   }, []);
 
+  // Mesmo raciocínio de appendConvoReply: parte do estado mais recente, não
+  // de uma cópia capturada antes do "await" de lockiaApi.challenge. Uma
+  // conversa nova só entra no estado real quando a 1ª entrada chega (ver
+  // handleChallengeGenerate), então se ela ainda não existir em `prev` é
+  // inserida aqui — do contrário, apenas mescla no que já existe.
+  const appendChallengeEntry = useCallback((id: string, title: string, entry: ChallengeEntry) => {
+    setChallengeConvos((prev) => {
+      const base = prev.some((c) => c.id === id) ? prev : [{ id, title, entries: [] }, ...prev];
+      const next = base.map((c) => (c.id === id ? { ...c, entries: [...c.entries, entry] } : c));
+      localStorage.setItem('lockia-challenge', JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  // Anexa a resposta (ou erro) de uma requisição em andamento à conversa,
+  // partindo sempre do estado MAIS RECENTE (não de uma cópia capturada antes
+  // do "await" da chamada à API). Entre o envio e a resposta chegar, o
+  // usuário pode trocar/apagar conversas pela sidebar (nada ali é bloqueado
+  // por isLoading) — usar uma cópia antiga aqui reverteria essas ações
+  // (ex: "ressuscitar" uma conversa apagada nesse meio-tempo).
+  const appendConvoReply = useCallback(
+    (key: string, id: string, reply: ChatMessage, setter: React.Dispatch<React.SetStateAction<ChatConversation[]>>) => {
+      setter((prev) => {
+        const next = prev.map((c) => (c.id === id ? { ...c, messages: [...c.messages, reply] } : c));
+        localStorage.setItem(key, JSON.stringify(next));
+        return next;
+      });
+    },
+    []
+  );
+
   // Sincroniza entre abas: se outra aba salvar uma dessas chaves (nova
   // mensagem, conversa apagada etc.), recarrega o estado em vez de deixar a
   // cópia em memória desta aba sobrescrever o que a outra aba salvou.
@@ -185,7 +216,7 @@ const ChatPage: React.FC = () => {
     setInput: (v: string) => void,
     setLoading: (v: boolean) => void,
     storageKey: string,
-    setConvos: (v: ChatConversation[]) => void,
+    setConvos: React.Dispatch<React.SetStateAction<ChatConversation[]>>,
     pendingAttachments: PendingAttachment[] = [],
     pendingLinks: string[] = [],
     clearPending?: () => void
@@ -234,10 +265,10 @@ const ChatPage: React.FC = () => {
           ? await lockiaApi.chat(token, messageForApi, history, apiAttachments)
           : await lockiaApi.cowork(token, messageForApi, history, authorizationConfirmed);
       const reply: ChatMessage = { role: 'aegis', content: response, timestamp: Date.now() };
-      persistChat(storageKey, withUser.map((c) => (c.id === workingId ? { ...c, messages: [...c.messages, reply] } : c)), setConvos);
+      appendConvoReply(storageKey, workingId, reply, setConvos);
     } catch (err: any) {
       const reply: ChatMessage = { role: 'aegis', content: err.message || 'Erro de conexão com o LOCKIA-API.', timestamp: Date.now(), isError: true };
-      persistChat(storageKey, withUser.map((c) => (c.id === workingId ? { ...c, messages: [...c.messages, reply] } : c)), setConvos);
+      appendConvoReply(storageKey, workingId, reply, setConvos);
     } finally {
       setLoading(false);
     }
@@ -277,24 +308,23 @@ const ChatPage: React.FC = () => {
     setChallengeLoading(true);
 
     let workingId = challengeActiveId;
-    let workingList = challengeConvos;
+    const title = deriveTitle(message);
     if (!workingId) {
       workingId = `${Date.now()}`;
-      workingList = [{ id: workingId, title: deriveTitle(message), entries: [] }, ...challengeConvos];
       setChallengeActiveId(workingId);
     }
 
     try {
       const { html } = await lockiaApi.challenge(token, message, []);
       const entry: ChallengeEntry = { prompt: message, html, timestamp: Date.now() };
-      persistChallenge(workingList.map((c) => (c.id === workingId ? { ...c, entries: [...c.entries, entry] } : c)));
+      appendChallengeEntry(workingId, title, entry);
     } catch (err: any) {
       const entry: ChallengeEntry = {
         prompt: message,
         html: `<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;"><h1>Erro</h1><p>${err.message || 'Não foi possível gerar o desafio.'}</p></body></html>`,
         timestamp: Date.now(),
       };
-      persistChallenge(workingList.map((c) => (c.id === workingId ? { ...c, entries: [...c.entries, entry] } : c)));
+      appendChallengeEntry(workingId, title, entry);
     } finally {
       setChallengeLoading(false);
     }
