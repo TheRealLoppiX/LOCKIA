@@ -56,8 +56,43 @@ const TypewriterMarkdown: React.FC<{ text: string; onDone?: () => void }> = ({ t
   const done = visibleChars >= text.length;
   return (
     <div className="chat-markdown">
-      <ReactMarkdown>{text.slice(0, visibleChars)}</ReactMarkdown>
+      <ReactMarkdown components={{ pre: CodeBlock }}>{text.slice(0, visibleChars)}</ReactMarkdown>
       {!done && <span className="chat-typing-cursor" />}
+    </div>
+  );
+};
+
+// O chat é cheio de comandos/payloads em blocos de código — copiar a
+// mensagem inteira (CopyMessageButton) obriga a recortar o resto manualmente.
+// Lê o texto direto do <pre> renderizado (via ref) em vez de tentar
+// reconstruir a string a partir de `children`, que pode vir como árvore de
+// nós React em vez de uma string simples.
+const CodeBlock: React.FC<React.HTMLAttributes<HTMLPreElement>> = ({ children, ...props }) => {
+  const preRef = useRef<HTMLPreElement>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const text = preRef.current?.textContent || '';
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard indisponível — ignora silenciosamente
+    }
+  };
+
+  return (
+    <div className="chat-code-block">
+      <button
+        type="button"
+        className="chat-code-copy-btn"
+        title={copied ? 'Copiado!' : 'Copiar código'}
+        onClick={handleCopy}
+      >
+        {copied ? <Check size={13} weight="bold" /> : <Copy size={13} />}
+      </button>
+      <pre ref={preRef} {...props}>{children}</pre>
     </div>
   );
 };
@@ -231,7 +266,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
                         <TypewriterMarkdown text={msg.content} onDone={() => setAnimatingIndex(null)} />
                       ) : (
                         <div className="chat-markdown">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          <ReactMarkdown components={{ pre: CodeBlock }}>{msg.content}</ReactMarkdown>
                         </div>
                       )
                     ) : (

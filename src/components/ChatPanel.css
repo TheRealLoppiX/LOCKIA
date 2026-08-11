@@ -169,6 +169,39 @@
   overflow-x: auto;
 }
 
+.chat-code-block {
+  position: relative;
+}
+
+.chat-code-block pre {
+  padding-right: 34px;
+}
+
+.chat-code-copy-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.chat-code-block:hover .chat-code-copy-btn {
+  opacity: 1;
+}
+
+.chat-code-copy-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 .chat-typing-cursor {
   display: inline-block;
   width: 7px;
