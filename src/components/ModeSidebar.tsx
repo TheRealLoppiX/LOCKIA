@@ -77,7 +77,9 @@ const ModeSidebar: React.FC<ModeSidebarProps> = ({
               aria-label="Excluir conversa"
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete(c.id);
+                if (window.confirm(`Excluir a conversa "${c.title}"? Essa ação não pode ser desfeita.`)) {
+                  onDelete(c.id);
+                }
               }}
             >
               <Trash size={13} />
