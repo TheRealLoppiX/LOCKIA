@@ -143,13 +143,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  const logout = () => {
+  const logout = (reason?: 'expired') => {
     localStorage.removeItem('lockia-user');
     localStorage.removeItem('lockia-token');
     setUser(null);
     setToken(null);
+    if (reason === 'expired') {
+      // Lido pela tela de login (Home.tsx) pra mostrar um aviso — some da
+      // sessionStorage assim que lido, então só aparece uma vez.
+      sessionStorage.setItem('lockia-session-expired', '1');
+    }
     navigate('/login');
   };
+
+  // Um 401 em qualquer chamada ao LOCKIA-API (ver api.ts) dispara este
+  // evento — sem isso, o usuário ficava "logado" na UI vendo só uma bolha de
+  // erro no chat, sem nenhuma ação clara pra recuperar a sessão.
+  useEffect(() => {
+    const handleExpired = () => logout('expired');
+    window.addEventListener('lockia:session-expired', handleExpired);
+    return () => window.removeEventListener('lockia:session-expired', handleExpired);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, loading, login, register, forgotPassword, logout }}>

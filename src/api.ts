@@ -33,6 +33,14 @@ async function post<T>(path: string, token: string, body: unknown): Promise<T> {
     // segue com data=null
   }
   if (!response.ok) {
+    // 401 aqui só acontece por token ausente/expirado/inválido (toda rota
+    // chamada por este client faz jwtVerify antes de mais nada) — sem esse
+    // evento, o usuário via só uma bolha de erro no chat e ficava "logado"
+    // na UI, sem nenhuma ação clara pra recuperar a sessão. authContext.tsx
+    // escuta este evento pra deslogar e redirecionar pro login.
+    if (response.status === 401) {
+      window.dispatchEvent(new Event('lockia:session-expired'));
+    }
     throw new Error(data?.message || `Erro ao chamar ${path} (${response.status}).`);
   }
   return data as T;

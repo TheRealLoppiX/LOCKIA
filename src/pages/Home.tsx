@@ -49,6 +49,14 @@ const LoginPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch }) 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // Lido uma única vez (e removido) — setado pelo authContext quando um 401
+  // desloga o usuário automaticamente, pra explicar por que ele voltou pro
+  // login em vez de deixá-lo achando que só "caiu" sem motivo.
+  const [sessionExpired] = useState(() => {
+    const flagged = sessionStorage.getItem('lockia-session-expired');
+    if (flagged) sessionStorage.removeItem('lockia-session-expired');
+    return !!flagged;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,6 +75,7 @@ const LoginPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch }) 
     <form onSubmit={handleSubmit} className="home-form">
       <h1>Entrar</h1>
       <p className="auth-subtitle">Use a mesma conta do LOCK para acessar o LOCKIA.</p>
+      {sessionExpired && !error && <div className="auth-notice">Sua sessão expirou. Faça login novamente.</div>}
       {error && <div className="auth-error">{error}</div>}
       <div className="auth-field">
         <EnvelopeSimple size={18} className="auth-field-icon" />

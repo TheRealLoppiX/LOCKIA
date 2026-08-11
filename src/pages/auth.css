@@ -75,6 +75,17 @@
   color: var(--accent);
 }
 
+.auth-notice {
+  background: var(--accent-dim);
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  color: var(--accent);
+  padding: 12px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
 .auth-error {
   background: linear-gradient(180deg, rgba(248, 81, 73, 0.14), rgba(248, 81, 73, 0.06));
   border: 1px solid rgba(248, 81, 73, 0.4);
