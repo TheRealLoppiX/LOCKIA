@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ShieldCheckered } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/authContext';
 import { lockiaApi, ChatAttachment } from '../api';
 import ModeSidebar, { LockiaMode } from '../components/ModeSidebar';
@@ -28,6 +29,7 @@ interface ChatConversation {
   title: string;
   messages: ChatMessage[];
   authorizationConfirmed?: boolean; // só usado no modo cowork
+  scope?: string; // só usado no modo cowork — escopo declarado no consentimento
 }
 
 interface ChallengeConversation {
@@ -263,7 +265,7 @@ const ChatPage: React.FC = () => {
       const { response } =
         kind === 'chat'
           ? await lockiaApi.chat(token, messageForApi, history, apiAttachments)
-          : await lockiaApi.cowork(token, messageForApi, history, authorizationConfirmed);
+          : await lockiaApi.cowork(token, messageForApi, history, authorizationConfirmed, activeConvo?.scope);
       const reply: ChatMessage = { role: 'aegis', content: response, timestamp: Date.now() };
       appendConvoReply(storageKey, workingId, reply, setConvos);
     } catch (err: any) {
@@ -287,15 +289,15 @@ const ChatPage: React.FC = () => {
     runChatLikeSend('cowork', message, coworkConvos, coworkActiveId, setCoworkActiveId, setCoworkInput, setCoworkLoading, 'lockia-cowork', setCoworkConvos);
   };
 
-  const handleCoworkConfirm = () => {
+  const handleCoworkConfirm = (scope: string) => {
     let workingId = coworkActiveId;
     let workingList = coworkConvos;
     if (!workingId) {
       workingId = `${Date.now()}`;
-      workingList = [{ id: workingId, title: 'Nova conversa', messages: [], authorizationConfirmed: true }, ...coworkConvos];
+      workingList = [{ id: workingId, title: 'Nova conversa', messages: [], authorizationConfirmed: true, scope }, ...coworkConvos];
       setCoworkActiveId(workingId);
     } else {
-      workingList = coworkConvos.map((c) => (c.id === workingId ? { ...c, authorizationConfirmed: true } : c));
+      workingList = coworkConvos.map((c) => (c.id === workingId ? { ...c, authorizationConfirmed: true, scope } : c));
     }
     persistChat('lockia-cowork', workingList, setCoworkConvos);
   };
@@ -362,6 +364,10 @@ const ChatPage: React.FC = () => {
           persistChat('lockia-chat', next, setChatConvos);
           if (chatActiveId === id) setChatActiveId(null);
         },
+        onRename: (id: string, title: string) => {
+          const next = chatConvos.map((c) => (c.id === id ? { ...c, title } : c));
+          persistChat('lockia-chat', next, setChatConvos);
+        },
       };
     }
     if (mode === 'cowork') {
@@ -381,6 +387,10 @@ const ChatPage: React.FC = () => {
           persistChat('lockia-cowork', next, setCoworkConvos);
           if (coworkActiveId === id) setCoworkActiveId(null);
         },
+        onRename: (id: string, title: string) => {
+          const next = coworkConvos.map((c) => (c.id === id ? { ...c, title } : c));
+          persistChat('lockia-cowork', next, setCoworkConvos);
+        },
       };
     }
     return {
@@ -398,6 +408,10 @@ const ChatPage: React.FC = () => {
         const next = challengeConvos.filter((c) => c.id !== id);
         persistChallenge(next);
         if (challengeActiveId === id) setChallengeActiveId(null);
+      },
+      onRename: (id: string, title: string) => {
+        const next = challengeConvos.map((c) => (c.id === id ? { ...c, title } : c));
+        persistChallenge(next);
       },
     };
   }, [mode, chatConvos, chatActiveId, coworkConvos, coworkActiveId, challengeConvos, challengeActiveId, persistChat, persistChallenge, clearChatPending]);
@@ -463,6 +477,13 @@ const ChatPage: React.FC = () => {
             placeholder="Descreva o que você precisa para o teste autorizado..."
             emptyTitle="Cowork"
             emptySubtitle="Assistência técnica para testes de invasão autorizados."
+            banner={
+              activeCoworkConvo.scope ? (
+                <div className="chat-scope-banner">
+                  <ShieldCheckered size={14} weight="duotone" /> Escopo declarado: {activeCoworkConvo.scope}
+                </div>
+              ) : undefined
+            }
           />
         )
       )}

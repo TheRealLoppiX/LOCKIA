@@ -53,6 +53,6 @@ export const lockiaApi = {
   challenge: (token: string, message: string, history: ChatHistoryEntry[]) =>
     post<{ html: string }>('/challenge', token, { message, history }),
 
-  cowork: (token: string, message: string, history: ChatHistoryEntry[], authorizationConfirmed: boolean) =>
-    post<{ response: string }>('/cowork', token, { message, history, authorizationConfirmed }),
+  cowork: (token: string, message: string, history: ChatHistoryEntry[], authorizationConfirmed: boolean, scope?: string) =>
+    post<{ response: string }>('/cowork', token, { message, history, authorizationConfirmed, scope }),
 };

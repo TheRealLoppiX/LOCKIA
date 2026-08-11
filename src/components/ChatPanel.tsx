@@ -123,6 +123,7 @@ interface ChatPanelProps {
   onSend: (message?: string) => void;
   conversationId?: string | null;
   disabled?: boolean;
+  banner?: React.ReactNode;
   placeholder?: string;
   emptyTitle?: string;
   emptySubtitle?: string;
@@ -147,6 +148,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
   onSend,
   conversationId,
   disabled,
+  banner,
   placeholder = 'Envie uma mensagem...',
   emptyTitle = 'Novo chat',
   emptySubtitle = '',
@@ -224,6 +226,7 @@ const ChatPanel: React.FC<ChatPanelProps> = ({
 
   return (
     <div className="chat-panel">
+      {banner}
       <div className="chat-messages">
         {messages.length === 0 ? (
           <div className="chat-empty-state">

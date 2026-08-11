@@ -34,6 +34,33 @@
   margin: 0 0 18px;
 }
 
+.cowork-consent-label {
+  display: block;
+  text-align: left;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.cowork-consent-scope {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  padding: 10px 12px;
+  resize: vertical;
+  margin-bottom: 16px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.cowork-consent-scope:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .cowork-consent-checkbox {
   display: flex;
   align-items: flex-start;

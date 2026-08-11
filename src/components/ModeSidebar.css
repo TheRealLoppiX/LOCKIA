@@ -104,6 +104,26 @@
   color: var(--text-primary);
 }
 
+.mode-history-item.editing {
+  padding: 4px 6px;
+}
+
+.mode-history-edit-input {
+  width: 100%;
+  background: var(--bg-elevated);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  padding: 6px 8px;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.mode-history-edit-input:focus {
+  outline: none;
+}
+
 .mode-history-title {
   overflow: hidden;
   text-overflow: ellipsis;
