@@ -314,8 +314,19 @@ const ChatPage: React.FC = () => {
       setChallengeActiveId(workingId);
     }
 
+    // Histórico da conversa (desafios já gerados nela) — sem isso, um pedido
+    // de acompanhamento como "agora deixa mais difícil" não tinha nenhum
+    // contexto do desafio anterior. Manda o prompt de cada desafio anterior
+    // e uma descrição curta em vez do HTML completo (que pode passar de
+    // 4000 caracteres e não ajuda o modelo a entender o desafio gerado).
+    const priorEntries = challengeConvos.find((c) => c.id === workingId)?.entries || [];
+    const history = priorEntries.flatMap((e) => [
+      { role: 'user' as const, content: e.prompt },
+      { role: 'aegis' as const, content: `[Desafio HTML gerado anteriormente sobre: "${e.prompt}"]` },
+    ]);
+
     try {
-      const { html } = await lockiaApi.challenge(token, message, []);
+      const { html } = await lockiaApi.challenge(token, message, history);
       const entry: ChallengeEntry = { prompt: message, html, timestamp: Date.now() };
       appendChallengeEntry(workingId, title, entry);
     } catch (err: any) {
