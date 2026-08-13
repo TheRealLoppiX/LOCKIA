@@ -21,7 +21,12 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   login: (identifier: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  // O cadastro não pede mais senha — o servidor gera uma e manda por
+  // e-mail, junto com o código de verificação. Por isso não aplica sessão
+  // automaticamente mais (ver verifyEmail).
+  register: (name: string, email: string) => Promise<void>;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  resendVerificationCode: (email: string) => Promise<void>;
   forgotPassword: (email: string) => Promise<void>;
   logout: () => void;
 }
@@ -110,22 +115,56 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     const data = await response.json();
     if (!response.ok || !data.token) {
-      throw new Error(data.message || 'E-mail ou senha inválidos.');
+      // code fica pendurado no erro (não só a mensagem) pra quem chamou
+      // decidir redirecionar pra tela de verificação em vez de só mostrar
+      // "credenciais inválidas".
+      const err: any = new Error(data.message || 'E-mail ou senha inválidos.');
+      if (data.code) err.code = data.code;
+      throw err;
     }
     applySession(data.token);
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  // Cria a conta (senha gerada pelo servidor, mandada por e-mail) mas não
+  // aplica sessão — só fica utilizável depois de confirmada via
+  // verifyEmail. A resposta de /register não traz mais token nenhum.
+  const register = async (name: string, email: string) => {
     const response = await fetch(`${LOCK_API_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Não foi possível criar a conta.');
+    }
+  };
+
+  // Confirma o código de 6 dígitos enviado por e-mail — só a partir daqui
+  // a conta vira utilizável.
+  const verifyEmail = async (email: string, code: string) => {
+    const response = await fetch(`${LOCK_API_URL}/verify-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code }),
     });
     const data = await response.json();
     if (!response.ok || !data.token) {
-      throw new Error(data.message || 'Não foi possível criar a conta.');
+      throw new Error(data.message || 'Código inválido ou expirado.');
     }
     applySession(data.token);
+  };
+
+  const resendVerificationCode = async (email: string) => {
+    const response = await fetch(`${LOCK_API_URL}/resend-verification`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || 'Não foi possível reenviar o código.');
+    }
   };
 
   // O e-mail de redefinição sempre aponta pro LOCK-FRONT (é lá que existe a
@@ -167,7 +206,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, loading, login, register, forgotPassword, logout }}>
+    <AuthContext.Provider value={{ user, token, isAuthenticated: !!user && !!token, loading, login, register, verifyEmail, resendVerificationCode, forgotPassword, logout }}>
       {!loading && children}
     </AuthContext.Provider>
   );
