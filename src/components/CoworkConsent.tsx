@@ -57,6 +57,15 @@ const CoworkConsent: React.FC<CoworkConsentProps> = ({ token, onConfirm }) => {
       .finally(() => setLoadingList(false));
   }, [token]);
 
+  // A confirmação é sobre um certificado específico ("confirmo que o
+  // certificado SELECIONADO é válido") — sem resetar aqui, trocar de
+  // certificado (ou enviar um novo PDF, que troca a seleção automaticamente)
+  // mantinha o botão liberado para um documento que o usuário nunca de fato
+  // confirmou.
+  useEffect(() => {
+    setChecked(false);
+  }, [selectedId]);
+
   const selected = certificates.find((c) => c.id === selectedId) || null;
   const canConfirm = checked && !!selected;
 

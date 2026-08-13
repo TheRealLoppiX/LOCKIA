@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../contexts/authContext';
 import { lockiaApi, ChatAttachment } from '../api';
 import ModeSidebar, { LockiaMode } from '../components/ModeSidebar';
@@ -112,6 +112,23 @@ const ChatPage: React.FC = () => {
   const [chatAttachmentError, setChatAttachmentError] = useState<string | null>(null);
   const [chatPendingLinks, setChatPendingLinks] = useState<string[]>([]);
 
+  // Espelha chatAttachments só pra revogar as blob URLs pendentes no
+  // desmonte da página (logout, sessão expirada, troca de conta) — sem
+  // isso, um anexo escolhido e nunca enviado/removido vazava a Object URL
+  // até a aba ser fechada.
+  const chatAttachmentsRef = useRef<PendingAttachment[]>([]);
+  useEffect(() => {
+    chatAttachmentsRef.current = chatAttachments;
+  }, [chatAttachments]);
+
+  useEffect(() => {
+    return () => {
+      chatAttachmentsRef.current.forEach((a) => {
+        if (a.previewUrl) URL.revokeObjectURL(a.previewUrl);
+      });
+    };
+  }, []);
+
   // --- Modo Cowork ---
   const [coworkConvos, setCoworkConvos] = useState<ChatConversation[]>(() => loadChat(coworkKey));
   const [coworkActiveId, setCoworkActiveId] = useState<string | null>(null);
@@ -170,9 +187,24 @@ const ChatPage: React.FC = () => {
   // cópia em memória desta aba sobrescrever o que a outra aba salvou.
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === chatKey) setChatConvos(loadChat(chatKey));
-      else if (e.key === coworkKey) setCoworkConvos(loadChat(coworkKey));
-      else if (e.key === challengeKey) setChallengeConvos(loadChallenge(challengeKey));
+      // Se a conversa ativa nesta aba foi apagada em outra (ex: pela
+      // sidebar), sem isso o activeId ficava "fantasma": as mensagens
+      // somem da tela (nenhuma conversa bate com esse id), mas o envio
+      // seguinte ainda tentava atualizar esse id inexistente — a
+      // mensagem do usuário e a resposta da IA eram silenciosamente
+      // descartadas, sem nenhum aviso. Resetar pra null volta pro estado
+      // normal de "nenhuma conversa selecionada".
+      if (e.key === chatKey) {
+        const next = loadChat(chatKey);
+        setChatConvos(next);
+        setChatActiveId((current) => (current && !next.some((c) => c.id === current) ? null : current));
+      } else if (e.key === coworkKey) {
+        const next = loadChat(coworkKey);
+        setCoworkConvos(next);
+        setCoworkActiveId((current) => (current && !next.some((c) => c.id === current) ? null : current));
+      } else if (e.key === challengeKey) {
+        setChallengeConvos(loadChallenge(challengeKey));
+      }
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
