@@ -125,6 +125,34 @@
   margin-top: 4px;
 }
 
+@keyframes lock-teaser-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(0, 229, 255, 0); }
+  50% { box-shadow: 0 0 14px rgba(0, 229, 255, 0.25); }
+}
+
+.lock-teaser {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 22px auto 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(0, 229, 255, 0.28);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-decoration: none;
+  width: fit-content;
+  transition: background 0.25s ease, transform 0.25s ease;
+  animation: lock-teaser-glow 3.5s ease-in-out infinite;
+}
+
+.lock-teaser:hover {
+  background: rgba(0, 229, 255, 0.18);
+  transform: translateY(-1px);
+}
+
 .home-button-row .auth-submit {
   margin-top: 0;
 }

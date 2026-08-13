@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, Navigate } from 'react-router-dom';
-import { EnvelopeSimple, LockSimple, User, Eye, EyeSlash } from '@phosphor-icons/react';
+import { EnvelopeSimple, LockSimple, User, Eye, EyeSlash, Sparkle } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/authContext';
 import HexagonBackground from '../components/HexagonBackground';
 import logo from '../assets/lockia-logo.png';
 import './auth.css';
 import './Home.css';
+
+const LOCK_FRONT_URL = process.env.REACT_APP_LOCK_FRONT_URL || 'https://lock-front.onrender.com';
 
 type Mode = 'landing' | 'login' | 'register' | 'forgot';
 
@@ -39,6 +41,9 @@ const LandingPanel: React.FC<{ onSwitch: (mode: Mode) => void }> = ({ onSwitch }
       <button className="auth-submit" onClick={() => onSwitch('login')}>Entrar</button>
       <button className="auth-submit secondary" onClick={() => onSwitch('register')}>Cadastre-se</button>
     </div>
+    <a href={LOCK_FRONT_URL} target="_blank" rel="noopener noreferrer" className="lock-teaser">
+      <Sparkle size={14} weight="fill" /> Experimente também o LOCK
+    </a>
   </div>
 );
 
