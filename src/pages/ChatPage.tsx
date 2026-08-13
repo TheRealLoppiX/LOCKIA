@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ShieldCheckered } from '@phosphor-icons/react';
 import { useAuth } from '../contexts/authContext';
 import { lockiaApi, ChatAttachment } from '../api';
 import ModeSidebar, { LockiaMode } from '../components/ModeSidebar';
@@ -508,13 +507,6 @@ const ChatPage: React.FC = () => {
             placeholder="Descreva o que você precisa para o teste autorizado..."
             emptyTitle="Cowork"
             emptySubtitle="Assistência técnica para testes de invasão autorizados."
-            banner={
-              activeCoworkConvo.scope ? (
-                <div className="chat-scope-banner">
-                  <ShieldCheckered size={14} weight="duotone" /> Escopo declarado: {activeCoworkConvo.scope}
-                </div>
-              ) : undefined
-            }
           />
         )
       )}
