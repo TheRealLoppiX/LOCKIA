@@ -70,12 +70,42 @@ const CHAT_SUGGESTIONS = [
   'Prepare-me para a prova CompTIA Security+',
 ];
 
+// Escopadas por userId — sem isso, um segundo usuário logando no mesmo
+// navegador herdava as conversas do usuário anterior via localStorage
+// compartilhado (o bug reportado).
+const CHAT_KEY_PREFIX = 'lockia-chat:';
+const COWORK_KEY_PREFIX = 'lockia-cowork:';
+const CHALLENGE_KEY_PREFIX = 'lockia-challenge:';
+// Chaves antigas (sem escopo por usuário) de antes desta correção — nunca
+// mais lidas, só removidas na primeira montagem para não deixar histórico de
+// conversa de outro usuário parado no localStorage do navegador.
+const LEGACY_CHAT_KEY = 'lockia-chat';
+const LEGACY_COWORK_KEY = 'lockia-cowork';
+const LEGACY_CHALLENGE_KEY = 'lockia-challenge';
+
 const ChatPage: React.FC = () => {
   const { token, user, logout } = useAuth();
+  // PrivateRoute só monta esta página com isAuthenticated true, então user já
+  // está resolvido aqui — o fallback 'anon' nunca é de fato usado, só
+  // satisfaz o tipo (User | null) do contexto.
+  const userId = user?.id || 'anon';
+  const chatKey = `${CHAT_KEY_PREFIX}${userId}`;
+  const coworkKey = `${COWORK_KEY_PREFIX}${userId}`;
+  const challengeKey = `${CHALLENGE_KEY_PREFIX}${userId}`;
+
+  // Remove as chaves antigas (sem escopo por usuário) uma única vez — elas
+  // podem ter histórico de conversa de outro usuário que já usou este
+  // navegador antes desta correção.
+  useEffect(() => {
+    localStorage.removeItem(LEGACY_CHAT_KEY);
+    localStorage.removeItem(LEGACY_COWORK_KEY);
+    localStorage.removeItem(LEGACY_CHALLENGE_KEY);
+  }, []);
+
   const [mode, setMode] = useState<LockiaMode>('chat');
 
   // --- Modo Chat ---
-  const [chatConvos, setChatConvos] = useState<ChatConversation[]>(() => loadChat('lockia-chat'));
+  const [chatConvos, setChatConvos] = useState<ChatConversation[]>(() => loadChat(chatKey));
   const [chatActiveId, setChatActiveId] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
@@ -84,13 +114,13 @@ const ChatPage: React.FC = () => {
   const [chatPendingLinks, setChatPendingLinks] = useState<string[]>([]);
 
   // --- Modo Cowork ---
-  const [coworkConvos, setCoworkConvos] = useState<ChatConversation[]>(() => loadChat('lockia-cowork'));
+  const [coworkConvos, setCoworkConvos] = useState<ChatConversation[]>(() => loadChat(coworkKey));
   const [coworkActiveId, setCoworkActiveId] = useState<string | null>(null);
   const [coworkInput, setCoworkInput] = useState('');
   const [coworkLoading, setCoworkLoading] = useState(false);
 
   // --- Modo Challenge ---
-  const [challengeConvos, setChallengeConvos] = useState<ChallengeConversation[]>(() => loadChallenge('lockia-challenge'));
+  const [challengeConvos, setChallengeConvos] = useState<ChallengeConversation[]>(() => loadChallenge(challengeKey));
   const [challengeActiveId, setChallengeActiveId] = useState<string | null>(null);
   const [challengeInput, setChallengeInput] = useState('');
   const [challengeLoading, setChallengeLoading] = useState(false);
@@ -102,8 +132,8 @@ const ChatPage: React.FC = () => {
 
   const persistChallenge = useCallback((next: ChallengeConversation[]) => {
     setChallengeConvos(next);
-    localStorage.setItem('lockia-challenge', JSON.stringify(next));
-  }, []);
+    localStorage.setItem(challengeKey, JSON.stringify(next));
+  }, [challengeKey]);
 
   // Mesmo raciocínio de appendConvoReply: parte do estado mais recente, não
   // de uma cópia capturada antes do "await" de lockiaApi.challenge. Uma
@@ -114,10 +144,10 @@ const ChatPage: React.FC = () => {
     setChallengeConvos((prev) => {
       const base = prev.some((c) => c.id === id) ? prev : [{ id, title, entries: [] }, ...prev];
       const next = base.map((c) => (c.id === id ? { ...c, entries: [...c.entries, entry] } : c));
-      localStorage.setItem('lockia-challenge', JSON.stringify(next));
+      localStorage.setItem(challengeKey, JSON.stringify(next));
       return next;
     });
-  }, []);
+  }, [challengeKey]);
 
   // Anexa a resposta (ou erro) de uma requisição em andamento à conversa,
   // partindo sempre do estado MAIS RECENTE (não de uma cópia capturada antes
@@ -141,13 +171,13 @@ const ChatPage: React.FC = () => {
   // cópia em memória desta aba sobrescrever o que a outra aba salvou.
   useEffect(() => {
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'lockia-chat') setChatConvos(loadChat('lockia-chat'));
-      else if (e.key === 'lockia-cowork') setCoworkConvos(loadChat('lockia-cowork'));
-      else if (e.key === 'lockia-challenge') setChallengeConvos(loadChallenge('lockia-challenge'));
+      if (e.key === chatKey) setChatConvos(loadChat(chatKey));
+      else if (e.key === coworkKey) setCoworkConvos(loadChat(coworkKey));
+      else if (e.key === challengeKey) setChallengeConvos(loadChallenge(challengeKey));
     };
     window.addEventListener('storage', handleStorage);
     return () => window.removeEventListener('storage', handleStorage);
-  }, []);
+  }, [chatKey, coworkKey, challengeKey]);
 
   // ---------------- Anexos do modo Chat (imagem/documento/link) ----------------
   const handleAddChatAttachments = async (files: FileList) => {
@@ -279,14 +309,14 @@ const ChatPage: React.FC = () => {
   const handleChatSend = (override?: string) => {
     const message = (override ?? chatInput).trim();
     runChatLikeSend(
-      'chat', message, chatConvos, chatActiveId, setChatActiveId, setChatInput, setChatLoading, 'lockia-chat', setChatConvos,
+      'chat', message, chatConvos, chatActiveId, setChatActiveId, setChatInput, setChatLoading, chatKey, setChatConvos,
       chatAttachments, chatPendingLinks, clearChatPending
     );
   };
 
   const handleCoworkSend = (override?: string) => {
     const message = (override ?? coworkInput).trim();
-    runChatLikeSend('cowork', message, coworkConvos, coworkActiveId, setCoworkActiveId, setCoworkInput, setCoworkLoading, 'lockia-cowork', setCoworkConvos);
+    runChatLikeSend('cowork', message, coworkConvos, coworkActiveId, setCoworkActiveId, setCoworkInput, setCoworkLoading, coworkKey, setCoworkConvos);
   };
 
   const handleCoworkConfirm = (scope: string) => {
@@ -299,7 +329,7 @@ const ChatPage: React.FC = () => {
     } else {
       workingList = coworkConvos.map((c) => (c.id === workingId ? { ...c, authorizationConfirmed: true, scope } : c));
     }
-    persistChat('lockia-cowork', workingList, setCoworkConvos);
+    persistChat(coworkKey, workingList, setCoworkConvos);
   };
 
   // ---------------- Challenge ----------------
@@ -361,12 +391,12 @@ const ChatPage: React.FC = () => {
         },
         onDelete: (id: string) => {
           const next = chatConvos.filter((c) => c.id !== id);
-          persistChat('lockia-chat', next, setChatConvos);
+          persistChat(chatKey, next, setChatConvos);
           if (chatActiveId === id) setChatActiveId(null);
         },
         onRename: (id: string, title: string) => {
           const next = chatConvos.map((c) => (c.id === id ? { ...c, title } : c));
-          persistChat('lockia-chat', next, setChatConvos);
+          persistChat(chatKey, next, setChatConvos);
         },
       };
     }
@@ -384,12 +414,12 @@ const ChatPage: React.FC = () => {
         },
         onDelete: (id: string) => {
           const next = coworkConvos.filter((c) => c.id !== id);
-          persistChat('lockia-cowork', next, setCoworkConvos);
+          persistChat(coworkKey, next, setCoworkConvos);
           if (coworkActiveId === id) setCoworkActiveId(null);
         },
         onRename: (id: string, title: string) => {
           const next = coworkConvos.map((c) => (c.id === id ? { ...c, title } : c));
-          persistChat('lockia-cowork', next, setCoworkConvos);
+          persistChat(coworkKey, next, setCoworkConvos);
         },
       };
     }
@@ -414,7 +444,7 @@ const ChatPage: React.FC = () => {
         persistChallenge(next);
       },
     };
-  }, [mode, chatConvos, chatActiveId, coworkConvos, coworkActiveId, challengeConvos, challengeActiveId, persistChat, persistChallenge, clearChatPending]);
+  }, [mode, chatConvos, chatActiveId, coworkConvos, coworkActiveId, challengeConvos, challengeActiveId, persistChat, persistChallenge, clearChatPending, chatKey, coworkKey]);
 
   const activeChatMessages = chatConvos.find((c) => c.id === chatActiveId)?.messages || [];
   const activeCoworkConvo = coworkConvos.find((c) => c.id === coworkActiveId);
