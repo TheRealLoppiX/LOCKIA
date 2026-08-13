@@ -61,6 +61,93 @@
   border-color: var(--accent);
 }
 
+.cowork-consent-hint {
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0 0 12px;
+}
+
+.cowork-cert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.cowork-cert-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.cowork-cert-item.selected {
+  border-color: var(--accent);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cowork-cert-item input {
+  margin: 0;
+}
+
+.cowork-cert-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cowork-cert-date {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cowork-cert-preview {
+  text-align: left;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.cowork-consent-upload-btn {
+  display: block;
+  text-align: center;
+  padding: 9px 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  margin-bottom: 6px;
+}
+
+.cowork-consent-upload-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent);
+}
+
+.cowork-consent-error {
+  text-align: left;
+  font-size: 0.78rem;
+  color: #f85149;
+  margin: 0 0 12px;
+}
+
 .cowork-consent-checkbox {
   display: flex;
   align-items: flex-start;

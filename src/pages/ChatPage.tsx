@@ -496,7 +496,7 @@ const ChatPage: React.FC = () => {
 
       {mode === 'cowork' && (
         !activeCoworkConvo?.authorizationConfirmed ? (
-          <CoworkConsent onConfirm={handleCoworkConfirm} />
+          <CoworkConsent token={token} onConfirm={handleCoworkConfirm} />
         ) : (
           <ChatPanel
             messages={activeCoworkConvo.messages}
