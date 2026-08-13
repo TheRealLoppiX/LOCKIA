@@ -144,6 +144,7 @@
   color: var(--danger);
 }
 
+.mode-lock-link,
 .mode-logout-btn {
   display: flex;
   align-items: center;
@@ -155,9 +156,18 @@
   color: var(--text-secondary);
   cursor: pointer;
   font-size: 0.82rem;
+  text-decoration: none;
+}
+
+.mode-lock-link {
   margin-top: 10px;
 }
 
+.mode-logout-btn {
+  margin-top: 6px;
+}
+
+.mode-lock-link:hover,
 .mode-logout-btn:hover {
   color: var(--text-primary);
   border-color: var(--accent);

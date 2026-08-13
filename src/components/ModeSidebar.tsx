@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ChatCircleText, Flask, ShieldCheckered, Plus, Trash, SignOut } from '@phosphor-icons/react';
+import { ChatCircleText, Flask, ShieldCheckered, Plus, Trash, SignOut, ArrowSquareOut } from '@phosphor-icons/react';
 import logo from '../assets/lockia-logo.png';
 import './ModeSidebar.css';
+
+const LOCK_FRONT_URL = process.env.REACT_APP_LOCK_FRONT_URL || 'https://lock-front.onrender.com';
 
 export type LockiaMode = 'chat' | 'challenge' | 'cowork';
 
@@ -20,6 +22,7 @@ interface ModeSidebarProps {
   onDelete: (id: string) => void;
   onRename?: (id: string, title: string) => void;
   userName?: string;
+  token?: string | null;
   onLogout: () => void;
 }
 
@@ -39,6 +42,7 @@ const ModeSidebar: React.FC<ModeSidebarProps> = ({
   onDelete,
   onRename,
   userName,
+  token,
   onLogout,
 }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -129,6 +133,15 @@ const ModeSidebar: React.FC<ModeSidebarProps> = ({
           )
         )}
       </div>
+
+      <a
+        className="mode-lock-link"
+        href={token ? `${LOCK_FRONT_URL}/#token=${token}` : LOCK_FRONT_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <ArrowSquareOut size={16} /> Ir para o LOCK
+      </a>
 
       <button className="mode-logout-btn" onClick={onLogout}>
         <SignOut size={16} /> {userName || 'Sair'}

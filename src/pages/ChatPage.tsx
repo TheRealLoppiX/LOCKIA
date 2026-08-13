@@ -426,6 +426,7 @@ const ChatPage: React.FC = () => {
         mode={mode}
         onModeChange={setMode}
         userName={user?.name}
+        token={token}
         onLogout={logout}
         {...sidebarProps}
       />
