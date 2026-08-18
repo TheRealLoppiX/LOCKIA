@@ -167,9 +167,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
-  // O e-mail de redefinição sempre aponta pro LOCK-FRONT (é lá que existe a
-  // tela de "crie uma nova senha" com o token) — mesmo pedido feito a partir
-  // do LOCKIA, já que é a mesma conta/backend.
+  // Não escolhe mais senha nenhuma — o LOCK-API gera uma senha nova e manda
+  // por e-mail (confirmação + senha, mesmo padrão do /register), mesmo
+  // pedido feito a partir do LOCKIA, já que é a mesma conta/backend.
   const forgotPassword = async (email: string) => {
     const response = await fetch(`${LOCK_API_URL}/forgot-password`, {
       method: 'POST',
@@ -178,7 +178,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.message || 'Não foi possível enviar o link.');
+      throw new Error(data.message || 'Não foi possível enviar o pedido de redefinição.');
     }
   };
 
