@@ -112,6 +112,20 @@
   flex-shrink: 0;
 }
 
+.cowork-consent-card .cowork-cert-delete {
+  width: auto;
+  padding: 4px;
+  display: flex;
+  background: none;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.cowork-consent-card .cowork-cert-delete:hover:not(:disabled) {
+  color: var(--danger);
+  background: rgba(248, 81, 73, 0.1);
+}
+
 .cowork-cert-preview {
   text-align: left;
   font-size: 0.78rem;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ShieldWarning, FilePdf } from '@phosphor-icons/react';
+import { ShieldWarning, FilePdf, Trash } from '@phosphor-icons/react';
 import { lockApi, AuthorizationCertificate } from '../lockApi';
 import './CoworkConsent.css';
 
@@ -39,6 +39,7 @@ const CoworkConsent: React.FC<CoworkConsentProps> = ({ token, onConfirm }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -97,6 +98,24 @@ const CoworkConsent: React.FC<CoworkConsentProps> = ({ token, onConfirm }) => {
     }
   };
 
+  const handleDelete = async (cert: AuthorizationCertificate) => {
+    if (!token) return;
+    if (!window.confirm(`Excluir o certificado "${cert.file_name}"? Essa ação não pode ser desfeita.`)) return;
+
+    setUploadError(null);
+    setDeletingId(cert.id);
+    try {
+      await lockApi.deleteCoworkAuthorization(token, cert.id);
+      const remaining = certificates.filter((c) => c.id !== cert.id);
+      setCertificates(remaining);
+      if (selectedId === cert.id) setSelectedId(remaining[0]?.id ?? null);
+    } catch (err: any) {
+      setUploadError(err.message || 'Não foi possível excluir o certificado.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const handleConfirm = () => {
     if (!selected) return;
     onConfirm(selected.extracted_text);
@@ -132,6 +151,20 @@ const CoworkConsent: React.FC<CoworkConsentProps> = ({ token, onConfirm }) => {
                 <FilePdf size={16} />
                 <span className="cowork-cert-name">{c.file_name}</span>
                 <span className="cowork-cert-date">{new Date(c.created_at).toLocaleDateString('pt-BR')}</span>
+                <button
+                  type="button"
+                  className="cowork-cert-delete"
+                  title="Excluir certificado"
+                  aria-label={`Excluir certificado ${c.file_name}`}
+                  disabled={deletingId === c.id}
+                  onClick={(e) => {
+                    // o item inteiro é um <label> do radio — sem isso o clique também trocaria a seleção
+                    e.preventDefault();
+                    handleDelete(c);
+                  }}
+                >
+                  <Trash size={14} />
+                </button>
               </label>
             ))}
           </div>

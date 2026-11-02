@@ -15,7 +15,9 @@ async function request<T>(path: string, token: string, options: RequestInit = {}
   const response = await fetch(`${LOCK_API_URL}${path}`, {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      // Content-Type só quando há corpo — o Fastify recusa (400) um DELETE
+      // sem corpo que declara application/json.
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
       Authorization: `Bearer ${token}`,
     },
   });
@@ -43,4 +45,7 @@ export const lockApi = {
       method: 'POST',
       body: JSON.stringify({ fileName, data }),
     }),
+
+  deleteCoworkAuthorization: (token: string, id: string) =>
+    request<{ message: string }>(`/cowork/authorizations/${encodeURIComponent(id)}`, token, { method: 'DELETE' }),
 };
